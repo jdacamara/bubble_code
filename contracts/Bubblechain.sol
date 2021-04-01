@@ -20,7 +20,7 @@ contract Bubblechain {
   function retrieveVerificationKey(address identifier) view public returns (string memory, uint256){
     VerificationKey memory v = keys[identifier];
     //return v
-    if(v.expDate <= now){
+    if(v.expDate <= now + 900){
       string memory a = v.verificationKey;
       uint256 b = v.expDate;
       return (a,b);
