@@ -30,11 +30,4 @@ contract Bubblechain {
 
   }
 
-
-  //function retrieveVerificationKey(address a) public view returns(VerificationKey){
-  //  return keys[a];
-  //}
-
-
-
 }
