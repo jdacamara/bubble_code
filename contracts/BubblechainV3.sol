@@ -10,6 +10,7 @@ contract BubblechainV3 {
 
   mapping(address => RootStruct) roots;
   mapping(address => uint256) rootLocations;
+  address[] public bubbleIDs;
 
   event RootLocationEvent(
     address indexed owner,
@@ -22,7 +23,13 @@ contract BubblechainV3 {
     uint256 expDate
     );
 
+  function getBlockNumber(address _address) public {
+    uint256 blocklocation = rootLocations[_address];
+    emit RootLocationEvent(_address, blocklocation);
+  }
+
   function emitRootLocation(uint256 blocklocation) public {
+    //Might have to assert tx.origin is equal to msg.sender
     rootLocations[msg.sender] = blocklocation;
     emit RootLocationEvent(msg.sender, blocklocation);
   }
