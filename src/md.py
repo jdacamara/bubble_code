@@ -27,7 +27,7 @@ mt = MerkleTools(hash_type='sha3_256')
 
 
 '''
-
+'''
 def createIDoT(public_key, experation_date):
     id = randrange(5000)
     while(id in identities):
@@ -116,14 +116,24 @@ def set_root_value():
 def set_root_location():
     pass
 
-
+'''
 class MD:
 
-    def __init__(self,node_ip, contract_abi_path, contract_address, account_number = 0 ):
+
+    def __init__(self,node_ip, contract_abi_path, contract_address, account_number = 0):
         self.web3 = Web3(HTTPProvider(node_ip))
         self.account = self.web3.eth.accounts[account_number]
+        # TODO: update get_abi method
+        self.contract = self.web3.eth.contract(address = Web3.toChecksumAddress(contract_address), abi = MD.get_abi(contract_abi_path))
         self.mt = MerkleTools(hash_type='sha3_256')
         self.idots = {}
+
+    # TODO: General method
+    def get_abi(contract_abi_path):
+        with open(contract_abi_path) as file :
+            contract_json = json.load(file)
+            contract_abi = contract_json['abi']
+            return contract_abi
 
 
     def create_IDoT(self, public_key, expiration_date):
@@ -165,15 +175,58 @@ class MD:
         except:
             return "Value not part of tree"
 
+    def testing_shit(self, exp = 1000):
+        self.contract.functions.emitRootValue("Test", exp)
+
     def set_root_value_on_blockchain(self, expiration_date):
+        '''
+        temp = 1001
+        tx_hash =self.contract.functions.emitRootValue(root,temp).transact({'from': self.account})
+        receipt = self.web3.eth.wait_for_transaction_receipt(tx_hash)
+        block_num = receipt['blockNumber']
+        events = list(fetch_events(self.contract.events.RootLocationEvent, from_block=block_num,to_block = block_num, argument_filters={"owner":self.account}))
+        print("This = ", len(events) )
+        last_event = events[-1:]
+        #print(last_event[0]['args']['block'] == temp)
+
+        '''
+        self.update_root()
         root = self.get_root_value()
-        self.contract.functions.emitRootValue(root, expiration_date).transact({'from': self.account})
+        tx_hash = self.contract.functions.emitRootValue(root, expiration_date).transact({'from': self.account})
+        receipt = self.web3.eth.wait_for_transaction_receipt(tx_hash)
+        #processed = self.contract.events.RootEvent().processReceipt(receipt)
+        block_num = receipt['blockNumber']
+        self.block_num = block_num
+        #print("Block NUmber =====", block_num)
+        self.set_root_location_on_blockchain()
+        return block_num
+
+
+        '''
+        events = list(fetch_events(self.contract.events.RootEvent, from_block=block_num,to_block = block_num, argument_filters={"owner":self.account}))
+        #events = list(fetch_events(self.contract.events.RootEvent, from_block=block_num, to_block = block_num))#, argument_filters={"owner":self.account}))
+        print("This = ", len(events) )
+        last_event = events[-1:]
+
+
+        print(last_event[0]['args']['root'])
+        print(root)
+        #print(receipt)
+        '''
+
+    def set_root_location_on_blockchain(self):
+        block_num = self.block_num
+        self.contract.functions.storeRootLocation(block_num).transact({'from': self.account})
 
     def get_root_value_location(self, address):
         tx_hash = self.contract.functions.getBlockNumber(address).transact({'from': self.account})
-        receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
-        block_number = get_block_number_from_transaction(receipt)
+        receipt = self.web3.eth.wait_for_transaction_receipt(tx_hash)
+        block_number =receipt['blockNumber']
+        #print(block_number)
         return block_number
 
     def get_root_value(self):
         return self.root_value
+
+    def get_block_number(self):
+        return self.block_num
