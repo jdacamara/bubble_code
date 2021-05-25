@@ -11,7 +11,7 @@ contract BubblechainV4 {
 
   event RootEvent(
     address indexed owner,
-    bytes32 root,
+    string root,
     uint256 expDate
   );
 
@@ -20,18 +20,18 @@ contract BubblechainV4 {
     emit RootLocationEvent(_address, blocklocation);
   }
 
-  function emitRootLocation(uint256 blocklocation) public {
+  function storeRootLocation(uint256 blocklocation) public {
     //Might have to assert tx.origin is equal to msg.sender
     require( msg.sender == tx.origin );
     rootLocations[msg.sender] = blocklocation;
     emit RootLocationEvent(msg.sender, blocklocation);
   }
 
-  function emitRootValue(bytes32 root, uint256 timeAdded) public returns(uint) {
+  function emitRootValue(string memory root, uint256 timeAdded) public returns(uint) {
     require( msg.sender == tx.origin);
-    uint256 timeStamp = block.timestamp + 900 + timeAdded;
+    //uint256 timeStamp = block.timestamp + 900 + timeAdded;
     //roots[msg.sender] = RootStruct(root, timeStamp);
-    emit RootEvent(msg.sender, root, timeStamp);
+    emit RootEvent(msg.sender, root, timeAdded);
     return block.number;
   }
 
