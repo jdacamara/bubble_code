@@ -1,5 +1,6 @@
 import sha3
 import coincurve
+import json
 
 from web3 import Web3, HTTPProvider
 from merkletools import MerkleTools
@@ -57,13 +58,16 @@ class Follower:
     def __init__(self, node_ip, contract_abi_path, contract_address):
         self.web3 = Web3(HTTPProvider(node_ip))
         self.private_key = coincurve.PrivateKey()
+
+        self.contract = self.web3.eth.contract(address = Web3.toChecksumAddress(contract_address), abi = Follower.get_abi(contract_abi_path))
         #self.mt = MerkleTools(hash_type='sha3_256')
 
-    def get_abi(abi_path):
-        with open(compiled_contract_path) as file :
+    # TODO: General method
+    def get_abi(contract_abi_path):
+        with open(contract_abi_path) as file :
             contract_json = json.load(file)
             contract_abi = contract_json['abi']
-        return contract_abi
+            return contract_abi
 
     def ecdh_handshake(self, public_key):
         return self.private_key.ecdh(public_key)
@@ -77,16 +81,89 @@ class Follower:
     def set_proof(self, proof_of_inclusion):
         self.proof_of_inclusion = proof_of_inclusion
 
+    def set_block_number(self, block_number):
+        self.block_number = block_number
+
     def get_idot(self):
         return self.idot
 
     def get_proof_of_inclusion(self):
         return self.proof_of_inclusion
 
-    def verify(self, idot, proof_of_inclusion, block_number):
-        pass
+    def get_block_number(self):
+        return self.block_number
 
-    #TODO: move to helper
+    def authenticate(self, idot, proof_of_inclusion, block_number, MD):
+        if self.verify_signature_idot(idot):
+
+            if (self.idot['bubble_id'] == idot['bubble_id']):
+                self.bubble_level_authentication(idot, proof_of_inclusion, block_number)
+            else:
+                #print("Different Bubble")
+                self.global_level_authentication(idot, proof_of_inclusion, block_number, MD)
+        else:
+            return "Malicious IDoT"
+
+    def bubble_level_authentication(self, idot, proof_of_inclusion, block_num):
+        if (self.get_block_number() == block_num):
+            # TODO: Add timing constraint
+            result = self.read_root_from_blockchain(block_num, idot['bubble_id'])
+            if (result):
+                root = result[0]
+                #print("Root = ", root)
+                #print("Proof = ", proof_of_inclusion)
+                #print("IDOT = ", idot)
+                print("Ow shit", Follower.verify_proof_of_inclusion(root, idot, proof_of_inclusion))
+            else:
+                return "Not root value for that Bubble ID at that block"
+        else:
+            return "Outdated block number"
+
+    def global_level_authentication(self, idot,proof_of_inclusion, block_num, MD):
+        result = self.read_root_from_blockchain(block_num, idot['bubble_id'])
+
+        if(result):
+            block_number_fetch_locaiton  = MD.get_root_value_location(idot['bubble_id'])
+            block_containng_root = self.read_block_number_location_from_blockchain(block_number_fetch_locaiton, idot['bubble_id'])
+            #print("Containing ===", block_containng_root)
+            #print("Given block ==", block_num )
+            if (block_containng_root == block_num):
+                root = result[0]
+                print("Ow shit -Global", Follower.verify_proof_of_inclusion(root, idot, proof_of_inclusion))
+
+            else:
+                #print('Outdate IDoT')
+                return 'Outdate IDoT'
+        else:
+            return "No root value at assigned location"
+
+
+    # TODO: Move to helper functions
+    def read_root_from_blockchain(self,block_num, address):
+        events = list(fetch_events(self.contract.events.RootEvent, from_block=block_num,to_block = block_num, argument_filters={"owner": address}))
+        try :
+            #print("Len = ", len(events))
+            last_event = events[-1:]
+            #print(last_event)
+
+            root = last_event[0]['args']['root']
+            exp_date = last_event[0]['args']['expDate']
+
+            return (root, exp_date)
+        except :
+            return None
+
+    def read_block_number_location_from_blockchain(self, block_num, address):
+        events = list(fetch_events(self.contract.events.RootLocationEvent, from_block=block_num,to_block = block_num, argument_filters={"owner": address}))
+        try:
+            last_event = events[-1:]
+            block_num = last_event[0]['args']['block']
+            return block_num
+        except:
+            return None
+
+
+    # TODO: Move to helper functions
     def verify_proof_of_inclusion(root, idot, proof_of_inclusion):
         mt = MerkleTools(hash_type='sha3_256')
         target_hash = hashfunc(bytes(str(idot), encoding="ascii"))
@@ -97,6 +174,9 @@ class Follower:
 
         message = encode_defunct(text=str(idot))
         bubble_id  = self.web3.eth.account.recover_message(message, signature = sig)
+
+        idot['sig'] = sig
+
         if (bubble_id == idot['bubble_id']):
             return True
 
