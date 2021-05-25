@@ -33,11 +33,11 @@ def fetch_events(
     abi_codec = event.web3.codec
 
     # Set up any indexed event filters if needed
-    print(argument_filters)
+    #print(argument_filters)
     if(argument_filters== None):
         argument_filters = dict()
     _filters = dict(**argument_filters)
-    print(_filters)
+    #print(_filters)
 
     data_filter_set, event_filter_params = construct_event_filter_params(
         abi,
