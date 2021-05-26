@@ -1,7 +1,7 @@
 import json
 import time
 
-from web3 import Web3, HTTPProvider
+from web3 import Web3, HTTPProvider, WebsocketProvider
 from merkletools import MerkleTools
 from events import fetch_events
 from random import randrange
@@ -117,11 +117,12 @@ def set_root_location():
     pass
 
 '''
+
 class MD:
 
 
     def __init__(self,node_ip, contract_abi_path, contract_address, account_number = 0):
-        self.web3 = Web3(HTTPProvider(node_ip))
+        self.web3 = Web3(WebsocketProvider(node_ip))
         self.account = self.web3.eth.accounts[account_number]
         # TODO: update get_abi method
         self.contract = self.web3.eth.contract(address = Web3.toChecksumAddress(contract_address), abi = MD.get_abi(contract_abi_path))
