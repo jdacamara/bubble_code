@@ -2,7 +2,7 @@ import sha3
 import coincurve
 import json
 
-from web3 import Web3, HTTPProvider
+from web3 import Web3, HTTPProvider, WebsocketProvider
 from merkletools import MerkleTools
 from events import fetch_events, hashfunc
 from eth_account.messages import encode_defunct
@@ -56,11 +56,11 @@ def verify_memberschip(address, value, proof, _block_number = None):
 class Follower:
 
     def __init__(self, node_ip, contract_abi_path, contract_address):
-        self.web3 = Web3(HTTPProvider(node_ip))
+        self.web3 = Web3(WebsocketProvider(node_ip))
         self.private_key = coincurve.PrivateKey()
 
         self.contract = self.web3.eth.contract(address = Web3.toChecksumAddress(contract_address), abi = Follower.get_abi(contract_abi_path))
-        #self.mt = MerkleTools(hash_type='sha3_256')
+
 
     # TODO: General method
     def get_abi(contract_abi_path):
@@ -124,9 +124,14 @@ class Follower:
 
         if(result):
             block_number_fetch_locaiton  = MD.get_root_value_location(idot['bubble_id'])
+            print("Info needed", type(idot['bubble_id']))
+            print("Info needed", idot['bubble_id'])
+            print("Info needed", type(block_number_fetch_locaiton))
+            print("Info needed", block_number_fetch_locaiton)
             block_containng_root = self.read_block_number_location_from_blockchain(block_number_fetch_locaiton, idot['bubble_id'])
             #print("Containing ===", block_containng_root)
             #print("Given block ==", block_num )
+            print("Check")
             if (block_containng_root == block_num):
                 root = result[0]
                 print("Ow shit -Global", Follower.verify_proof_of_inclusion(root, idot, proof_of_inclusion))
@@ -155,6 +160,7 @@ class Follower:
 
     def read_block_number_location_from_blockchain(self, block_num, address):
         events = list(fetch_events(self.contract.events.RootLocationEvent, from_block=block_num,to_block = block_num, argument_filters={"owner": address}))
+        print("Len = ", len(events))
         try:
             last_event = events[-1:]
             block_num = last_event[0]['args']['block']
