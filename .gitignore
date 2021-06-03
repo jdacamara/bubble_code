@@ -1,3 +1,2 @@
 build/contracts
-!build/contracts/Bubblechainv4.json
 *.pyc
