@@ -1,13 +1,8 @@
 pragma solidity >=0.4.22 <0.9.0;
 
-contract BubblechainV4 {
+contract BubblechainV5 {
 
-  mapping(address => uint256) rootLocations;
-
-  event RootLocationEvent(
-    address indexed owner,
-    uint256 block
-  );
+  mapping(address => uint256) public rootLocations;
 
   event RootEvent(
     address indexed owner,
@@ -15,9 +10,9 @@ contract BubblechainV4 {
     uint256 expDate
   );
 
-  function getBlockNumber(address _address) public {
+  function getBlockNumber(address _address) public view returns (uint256) {
     uint256 blocklocation = rootLocations[_address];
-    emit RootLocationEvent(_address, blocklocation);
+    return blocklocation;
   }
 
   function storeRootLocation(uint256 blocklocation) public {
@@ -26,7 +21,7 @@ contract BubblechainV4 {
     rootLocations[msg.sender] = blocklocation;
   }
 
-  function emitRootValue(string memory root, uint256 timeAdded) public returns(uint) {
+  function emitRootValue(string memory root, uint256 timeAdded) public {
     // Assert that only wallets can execute this transaction.
     require( msg.sender == tx.origin);
     emit RootEvent(msg.sender, root, timeAdded);
